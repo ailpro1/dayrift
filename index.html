@@ -6,14 +6,14 @@
 <meta name="theme-color" content="#8875C7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Noted">
+<meta name="apple-mobile-web-app-title" content="Dayrift">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap">
-<title>Noted</title>
+<title>Dayrift</title>
 <script>
-(function(){try{var s=JSON.parse(localStorage.getItem('noted_s')||'{}');if(s.theme==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+(function(){try{var s=JSON.parse(localStorage.getItem('Dayrift_s')||'{}');if(s.theme==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
 </script>
 <style>
 :root{
@@ -300,11 +300,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wb-color.on{border-color:var(--text);transform:scale(1.12)}
 
 /* Table */
-.noted-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;border:1px solid var(--border)}
-.noted-table th{font-weight:800;padding:7px 10px;text-align:left;border-right:1px solid var(--border)}
-.noted-table td{padding:7px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.noted-table td:last-child,.noted-table th:last-child{border-right:none}
-.noted-table tr:last-child td{border-bottom:none}
+.Dayrift-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;border:1px solid var(--border)}
+.Dayrift-table th{font-weight:800;padding:7px 10px;text-align:left;border-right:1px solid var(--border)}
+.Dayrift-table td{padding:7px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.Dayrift-table td:last-child,.Dayrift-table th:last-child{border-right:none}
+.Dayrift-table tr:last-child td{border-bottom:none}
 .tbl-clr{width:30px;height:30px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:13px}
 .tbl-clr.on{border-color:var(--primary)}
 
@@ -343,7 +343,7 @@ input[type=file]{display:none}
 <!-- ═══ HOME ═══ -->
 <div class="screen active" id="s-home">
   <div class="hdr">
-    <span class="hdr-title"><span>🌿</span>Noted</span>
+    <span class="hdr-title"><span>🌿</span>Dayrift</span>
     <button class="ibtn" onclick="App.drawer.open()" title="Menu" style="font-size:18px">☰</button>
   </div>
   <div class="scrl pad" id="home-scrl">
@@ -481,7 +481,7 @@ input[type=file]{display:none}
         1️⃣ App is <strong>Added to Home Screen</strong> (Safari → Share → Add to Home Screen)<br>
         2️⃣ Open from Home Screen icon (not Safari tab)<br>
         3️⃣ Tap the toggle below and tap <em>Allow</em><br>
-        4️⃣ iOS Settings → Notifications → Noted → Allow
+        4️⃣ iOS Settings → Notifications → Dayrift → Allow
       </div>
       <div class="sgrp">
         <div class="sitem" onclick="App.cfg.notif()">
@@ -506,7 +506,7 @@ input[type=file]{display:none}
       <div class="s-sec">About</div>
       <div class="sgrp">
         <div class="sitem" style="cursor:default">
-          <div class="sil"><div class="s-ic" style="background:var(--primary-pale)">🌿</div><div><div class="s-t">Noted v1.1</div><div class="s-sub">Your thoughts, beautifully kept 💜</div></div></div>
+          <div class="sil"><div class="s-ic" style="background:var(--primary-pale)">🌿</div><div><div class="s-t">Dayrift v1.1</div><div class="s-sub">Your thoughts, beautifully kept 💜</div></div></div>
         </div>
         <div class="sitem" onclick="App.cfg.clear()">
           <div class="sil"><div class="s-ic" style="background:#FDECEA">🗑️</div><div><div class="s-t" style="color:var(--secondary)">Clear All Data</div><div class="s-sub">Permanently delete everything</div></div></div>
@@ -713,7 +713,7 @@ function applyColor(name){
 // ── DB ───────────────────────────────────────────────────────────────────────
 const DB={
   db:null,
-  init(){return new Promise((res,rej)=>{const r=indexedDB.open('noted_db',2);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains('notes'))db.createObjectStore('notes',{keyPath:'id'});if(!db.objectStoreNames.contains('journals'))db.createObjectStore('journals',{keyPath:'id'});if(!db.objectStoreNames.contains('reminders'))db.createObjectStore('reminders',{keyPath:'id'});};r.onsuccess=e=>{this.db=e.target.result;res();};r.onerror=()=>rej(r.error);});},
+  init(){return new Promise((res,rej)=>{const r=indexedDB.open('Dayrift_db',2);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains('notes'))db.createObjectStore('notes',{keyPath:'id'});if(!db.objectStoreNames.contains('journals'))db.createObjectStore('journals',{keyPath:'id'});if(!db.objectStoreNames.contains('reminders'))db.createObjectStore('reminders',{keyPath:'id'});};r.onsuccess=e=>{this.db=e.target.result;res();};r.onerror=()=>rej(r.error);});},
   all(s){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readonly'),r=t.objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
   put(s,v){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite'),r=t.objectStore(s).put(v);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});},
   del(s,id){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite'),r=t.objectStore(s).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});},
@@ -724,8 +724,8 @@ const DB={
 const S={
   notes:[],journals:[],reminders:[],
   cfg:{theme:'light',notif:false,color:'lavender',name:''},
-  loadCfg(){try{const c=localStorage.getItem('noted_s');if(c)this.cfg={...this.cfg,...JSON.parse(c)};}catch(e){}},
-  saveCfg(){try{localStorage.setItem('noted_s',JSON.stringify(this.cfg));}catch(e){}}
+  loadCfg(){try{const c=localStorage.getItem('Dayrift_s');if(c)this.cfg={...this.cfg,...JSON.parse(c)};}catch(e){}},
+  saveCfg(){try{localStorage.setItem('Dayrift_s',JSON.stringify(this.cfg));}catch(e){}}
 };
 
 // ── UTILS ────────────────────────────────────────────────────────────────────
@@ -1049,7 +1049,7 @@ ed:{
   tbl_c(c,btn){this._tblColor=c;document.querySelectorAll('.tbl-clr').forEach(b=>{b.classList.remove('on');b.textContent='';});btn.classList.add('on');btn.textContent='✓';},
   do_tbl(){
     const cols=parseInt(document.getElementById('tbl-c').value)||3,rows=parseInt(document.getElementById('tbl-r').value)||3,col=this._tblColor||'#EDE9FF';
-    let h=`<table class="noted-table"><thead><tr>`;for(let c=0;c<cols;c++)h+=`<th style="background:${col}" contenteditable="true">Column ${c+1}</th>`;h+=`</tr></thead><tbody>`;for(let r=0;r<rows;r++){h+=`<tr>`;for(let c=0;c<cols;c++)h+=`<td contenteditable="true"></td>`;h+=`</tr>`;}h+=`</tbody></table><p><br></p>`;
+    let h=`<table class="Dayrift-table"><thead><tr>`;for(let c=0;c<cols;c++)h+=`<th style="background:${col}" contenteditable="true">Column ${c+1}</th>`;h+=`</tr></thead><tbody>`;for(let r=0;r<rows;r++){h+=`<tr>`;for(let c=0;c<cols;c++)h+=`<td contenteditable="true"></td>`;h+=`</tr>`;}h+=`</tbody></table><p><br></p>`;
     this._rr();document.getElementById('ed-c').focus();document.execCommand('insertHTML',false,h);document.getElementById('m-tbl').classList.remove('open');
   },
   photos(e){Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{this._photos.push(ev.target.result);this._rPh();};r.readAsDataURL(f);});e.target.value='';},
@@ -1175,7 +1175,7 @@ bkp:{
     const data={ver:'1.1',at:U.now(),notes:S.notes,journals:S.journals,reminders:S.reminders,cfg:S.cfg};
     const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const u=URL.createObjectURL(b);const a=document.createElement('a');
-    a.href=u;a.download=`noted-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(u);toast('Backup saved 📤');
+    a.href=u;a.download=`Dayrift-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(u);toast('Backup saved 📤');
   },
   async imp(e){
     const f=e.target.files[0];if(!f)return;
