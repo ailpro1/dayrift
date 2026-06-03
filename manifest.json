@@ -1,0 +1,19 @@
+{
+  "name": "Noted",
+  "short_name": "Noted",
+  "description": "Your personal notes, journal & reminder app",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F9F8FF",
+  "theme_color": "#8875C7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"]
+}
