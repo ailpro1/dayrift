@@ -1,6 +1,6 @@
 {
-  "name": "Noted",
-  "short_name": "Noted",
+  "name": "Dayrift",
+  "short_name": "Dayrift",
   "description": "Your personal notes, journal & reminder app",
   "start_url": "./",
   "display": "standalone",
