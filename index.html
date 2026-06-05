@@ -336,6 +336,30 @@ input[type=date],input[type=time],input[type=datetime-local]{color-scheme:light}
 .fu:nth-child(4){animation-delay:.16s}.fu:nth-child(5){animation-delay:.2s}.fu:nth-child(6){animation-delay:.24s}
 
 input[type=file]{display:none}
+/* ── FOLDER STYLES ───────────────────────────── */
+.notes-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.ntab{flex:1;padding:11px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--text2);background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.ntab.on{color:var(--primary);border-bottom-color:var(--primary)}
+.folder-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:4px 0}
+.folder-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;display:flex;align-items:center;gap:10px}
+.folder-card:active{transform:scale(.97);box-shadow:var(--sh)}
+.folder-icon{width:52px;height:52px;object-fit:contain;flex-shrink:0}
+.folder-name{font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder-count{font-size:11px;color:var(--text2);margin-top:2px}
+.folder-menu-btn{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:none;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.folder-active-bar{display:none;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--primary-pale);border-radius:var(--r-sm)}
+
+/* ── VOICE RECORDING ─────────────────────────── */
+.voice-bar{display:none;align-items:center;gap:10px;padding:9px 14px;background:var(--sec-pale);border-top:1.5px solid var(--secondary);flex-shrink:0}
+.voice-bar.active{display:flex}
+.voice-dot{width:9px;height:9px;border-radius:50%;background:var(--secondary);animation:vrec 1s ease-in-out infinite}
+@keyframes vrec{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+.voice-time{font-size:13px;font-weight:800;color:var(--secondary);min-width:36px}
+.ed-audio-wrap{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ed-audio-wrap audio{flex:1;height:36px;border-radius:var(--r-sm)}
+
+/* ── CALENDAR FIX — single combined grid ─────── */
+.cal-combined{display:grid;grid-template-columns:repeat(7,1fr);padding:2px 8px 8px}
 </style>
 </head>
 <body>
@@ -369,9 +393,20 @@ input[type=file]{display:none}
 <div class="screen" id="s-notes">
   <div class="hdr">
     <span class="hdr-title"><span>📝</span>Notes</span>
-    <div class="vsw"><button class="vbtn on" onclick="App.notes.vw('list',this)">List</button><button class="vbtn" onclick="App.notes.vw('grid',this)">Grid</button></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="ibtn" onclick="App.folders.newFolder()" style="font-size:17px" title="New Folder">📁</button>
+      <div class="vsw" id="notes-vsw">
+        <button class="vbtn on" onclick="App.notes.vw('list',this)">List</button>
+        <button class="vbtn" onclick="App.notes.vw('grid',this)">Grid</button>
+      </div>
+    </div>
   </div>
-  <div class="scrl pad">
+  <div class="notes-tabs">
+    <button class="ntab on" id="ntab-notes" onclick="App.notes.mainTab('notes',this)">📝 All Notes</button>
+    <button class="ntab" id="ntab-folders" onclick="App.notes.mainTab('folders',this)">📁 Folders</button>
+  </div>
+  <!-- Notes tab -->
+  <div id="notes-pane" class="scrl pad" style="flex-direction:column">
     <div class="search">🔍<input type="text" placeholder="Search notes…" id="notes-q" oninput="App.notes.srch(this.value)"></div>
     <div class="chips">
       <button class="chip on" onclick="App.notes.srt('new',this)">Newest</button>
@@ -379,7 +414,16 @@ input[type=file]{display:none}
       <button class="chip" onclick="App.notes.srt('az',this)">A → Z</button>
       <button class="chip" onclick="App.notes.srt('pin',this)">Pinned</button>
     </div>
+    <div class="folder-active-bar" id="folder-active-bar">
+      <span style="font-size:19px">📁</span>
+      <span id="folder-active-name" style="font-weight:700;font-size:14px;color:var(--primary);flex:1"></span>
+      <button onclick="App.folders.clearFilter()" style="font-size:12px;font-weight:700;color:var(--primary);background:none;border:none;cursor:pointer;padding:3px 8px">✕ Clear</button>
+    </div>
     <div id="notes-list" style="padding-top:4px"></div>
+  </div>
+  <!-- Folders tab -->
+  <div id="folders-pane" class="scrl pad" style="display:none">
+    <div id="folders-list" style="padding-top:8px"></div>
   </div>
 </div>
 
@@ -389,7 +433,10 @@ input[type=file]{display:none}
     <span class="hdr-title"><span>📓</span>Journal</span>
     <div class="vsw"><button class="vbtn on" onclick="App.jour.srt('new',this)">Newest</button><button class="vbtn" onclick="App.jour.srt('old',this)">Oldest</button></div>
   </div>
-  <div class="scrl pad"><div id="jour-tl" style="padding-top:12px"></div></div>
+  <div style="padding:0 16px;flex-shrink:0">
+    <div class="search" style="margin:10px 0">🔍<input type="text" placeholder="Search journal…" id="jour-q" oninput="App.jour.srch(this.value)"></div>
+  </div>
+  <div class="scrl pad" style="padding-top:0"><div id="jour-tl" style="padding-top:12px"></div></div>
 </div>
 
 <!-- JOURNAL VIEW (read-only) -->
@@ -519,6 +566,7 @@ input[type=file]{display:none}
       </div>
       <div style="display:flex;align-items:center;gap:7px">
         <span class="as-ind" id="as-ind"></span>
+        <button class="ibtn" id="folder-btn" onclick="App.folders.openMoveModal()" title="Move to folder" style="display:none">📁</button>
         <button class="ibtn" id="pin-btn" onclick="App.ed.pin()" title="Pin">📍</button>
         <button class="ibtn" id="del-btn" onclick="App.ed.del()" style="display:none">🗑️</button>
         <button class="ed-save" onclick="App.ed.save()">Save ✓</button>
@@ -536,6 +584,14 @@ input[type=file]{display:none}
       <button class="tbtn" onclick="App.ed.dt()">📅</button>
       <button class="tbtn" onclick="App.ed.tbl()">⊞</button>
       <button class="tbtn" onclick="document.getElementById('ph-up').click()">🖼️</button>
+      <div class="tdiv"></div>
+      <button class="tbtn" id="voice-btn" onclick="App.ed.voiceToggle()" title="Voice Note">🎙️</button>
+    </div>
+    <div class="voice-bar" id="voice-bar">
+      <div class="voice-dot"></div>
+      <span class="voice-time" id="voice-time">0:00</span>
+      <span style="font-size:13px;color:var(--secondary);font-weight:600;flex:1">Recording…</span>
+      <button onclick="App.ed.voiceStop(true)" style="font-size:12px;font-weight:700;color:var(--secondary);background:var(--sec-pale);border:1.5px solid var(--secondary);cursor:pointer;padding:4px 10px;border-radius:20px;font-family:var(--font)">Discard</button>
     </div>
     <div class="ed-body" id="ed-body">
       <textarea class="ed-title" id="ed-t" rows="1" placeholder="Title…" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
@@ -554,6 +610,7 @@ input[type=file]{display:none}
       </div>
       <div class="ed-content" id="ed-c" contenteditable="true" spellcheck="true" data-placeholder="Start writing…"></div>
       <div class="ed-photos" id="ed-photos"></div>
+      <div id="ed-audios" style="margin-top:8px"></div>
     </div>
     <input type="file" id="ph-up" accept="image/*" multiple onchange="App.ed.photos(event)">
   </div>
@@ -646,7 +703,52 @@ input[type=file]{display:none}
     <button class="btn-s" onclick="document.getElementById('m-dt').classList.remove('open')">Cancel</button>
   </div>
 </div>
+<!-- FOLDER FORM MODAL -->
+<div class="mo" id="m-folder">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="folder-modal-title">📁 New Folder</div>
+    <div class="fgroup">
+      <label class="flabel">Folder Name</label>
+      <input type="text" class="finput" id="folder-name-inp" placeholder="e.g. Work, Personal, Ideas…" maxlength="40">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Sort notes by</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="folder-sort-row">
+        <button class="chip on" data-fsort="new" onclick="App.folders.setSort('new',this)">Newest</button>
+        <button class="chip" data-fsort="old" onclick="App.folders.setSort('old',this)">Oldest</button>
+        <button class="chip" data-fsort="az" onclick="App.folders.setSort('az',this)">A → Z</button>
+        <button class="chip" data-fsort="pin" onclick="App.folders.setSort('pin',this)">Pinned first</button>
+      </div>
+    </div>
+    <button class="btn-p" onclick="App.folders.save()">Save ✓</button>
+    <button class="btn-s" id="folder-del-btn" onclick="App.folders.confirmDel()" style="display:none;color:var(--secondary);border-color:var(--secondary)">🗑️ Delete Folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-folder').classList.remove('open')">Cancel</button>
+  </div>
+</div>
 
+<!-- FOLDER CONTEXT MENU -->
+<div class="mo" id="m-fctx">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="fctx-title">📁 Folder</div>
+    <button class="btn-s" style="margin-top:0;border:none;text-align:left;font-size:15px;color:var(--text)" onclick="App.folders.openEdit()">✏️ &nbsp;Rename / change sort</button>
+    <button class="btn-s" style="margin-top:8px;border:none;text-align:left;font-size:15px;color:var(--text)" onclick="App.folders.openFilter()">🔍 &nbsp;Browse this folder</button>
+    <button class="btn-s" style="margin-top:8px;border:none;text-align:left;font-size:15px;color:var(--secondary)" onclick="App.folders.confirmDel()">🗑️ &nbsp;Delete folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-fctx').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- MOVE NOTE TO FOLDER -->
+<div class="mo" id="m-movefolder">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">📁 Move to Folder</div>
+    <div id="move-folder-list"></div>
+    <button class="btn-s" onclick="App.folders.moveTo(null)">✕ Remove from folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-movefolder').classList.remove('open')">Cancel</button>
+  </div>
+</div>
 <!-- PHOTO VIEWER -->
 <div class="ph-view" id="ph-view" onclick="this.classList.remove('open')">
   <button class="ph-view-x" onclick="document.getElementById('ph-view').classList.remove('open')">✕</button>
@@ -676,9 +778,11 @@ const DB={db:null,
 };
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-const S={notes:[],journals:[],reminders:[],cfg:{theme:'light',notif:false,color:'lavender',name:''},
-  loadCfg(){try{const c=localStorage.getItem('Dayrift_s');if(c)this.cfg={...this.cfg,...JSON.parse(c)};}catch(e){}},
-  saveCfg(){try{localStorage.setItem('Dayrift_s',JSON.stringify(this.cfg));}catch(e){}}
+const S={notes:[],journals:[],reminders:[],folders:[],cfg:{theme:'light',notif:false,color:'lavender',name:''},
+  loadCfg(){try{const c=localStorage.getItem('noted_s');if(c)this.cfg={...this.cfg,...JSON.parse(c)};}catch(e){}},
+  saveCfg(){try{localStorage.setItem('noted_s',JSON.stringify(this.cfg));}catch(e){}},
+  loadFolders(){try{this.folders=JSON.parse(localStorage.getItem('noted_fld')||'[]');}catch(e){this.folders=[];}},
+  saveFolders(){try{localStorage.setItem('noted_fld',JSON.stringify(this.folders));}catch(e){}}
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
@@ -774,25 +878,61 @@ home:{
   streak(){if(!S.journals.length)return 0;const dates=[...new Set(S.journals.map(j=>j.date.split('T')[0]))].sort().reverse();let s=0;const chk=new Date();chk.setHours(0,0,0,0);for(const d of dates){const ds=chk.toISOString().split('T')[0];if(d===ds){s++;chk.setDate(chk.getDate()-1);}else if(d<ds)break;}return s;}
 },
 
-notes:{_sort:'new',_q:'',
-  get(){let a=[...S.notes];if(this._q){const q=this._q.toLowerCase();a=a.filter(n=>(n.title||'').toLowerCase().includes(q)||U.strip(n.content).toLowerCase().includes(q));}if(this._sort==='new')a.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));else if(this._sort==='old')a.sort((a,b)=>new Date(a.updatedAt)-new Date(b.updatedAt));else if(this._sort==='az')a.sort((a,b)=>(a.title||'').localeCompare(b.title||''));else a.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));return a;},
-  render(){const el=document.getElementById('notes-list');const items=this.get();if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">No notes yet</div><div class="empty-s">Tap + to add your first note</div></div>`;return;}el.innerHTML=items.map(n=>`<div class="card fu" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,120)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span></div></div>`).join('');},
-  vw(v,btn){document.querySelectorAll('#s-notes .vbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();},
+notes:{_sort:'new',_q:'',_tab:'notes',_fid:null,
+  get(){
+    let a=[...S.notes];
+    if(this._fid){
+      const f=S.folders.find(f=>f.id===this._fid);
+      a=a.filter(n=>n.folderId===this._fid);
+      const s=f?.sort||this._sort;
+      if(s==='new')a.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+      else if(s==='old')a.sort((a,b)=>new Date(a.updatedAt)-new Date(b.updatedAt));
+      else if(s==='az')a.sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+      else a.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+      return a;
+    }
+    if(this._q){const q=this._q.toLowerCase();a=a.filter(n=>(n.title||'').toLowerCase().includes(q)||U.strip(n.content).toLowerCase().includes(q));}
+    if(this._sort==='new')a.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+    else if(this._sort==='old')a.sort((a,b)=>new Date(a.updatedAt)-new Date(b.updatedAt));
+    else if(this._sort==='az')a.sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+    else a.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+    return a;
+  },
+  render(){
+    if(this._tab==='folders'){App.folders.renderList();return;}
+    const el=document.getElementById('notes-list');const items=this.get();
+    if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">${this._fid?'No notes in this folder':'No notes yet'}</div><div class="empty-s">Tap + to create a note</div></div>`;return;}
+    el.innerHTML=items.map(n=>{
+      const f=n.folderId?S.folders.find(x=>x.id===n.folderId):null;
+      return`<div class="card fu" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,120)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span>${f?`<span style="font-size:10px;color:var(--primary);font-weight:700;background:var(--primary-pale);padding:2px 7px;border-radius:10px">📁 ${f.name}</span>`:''}</div></div>`;
+    }).join('');
+  },
+  mainTab(t,btn){
+    this._tab=t;
+    document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+    document.getElementById('notes-pane').style.display=t==='notes'?'flex':'none';
+    document.getElementById('folders-pane').style.display=t==='folders'?'block':'none';
+    this.render();
+  },
+  vw(v,btn){document.querySelectorAll('#notes-vsw .vbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();},
   srt(s,btn){this._sort=s;document.querySelectorAll('.chip').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();},
   srch(q){this._q=q;this.render();}
 },
 
-jour:{_sort:'new',
+jour:{_sort:'new',_q:'',
   render(){
-    const items=[...S.journals];if(this._sort==='new')items.sort((a,b)=>new Date(b.date)-new Date(a.date));else items.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    let items=[...S.journals];
+    if(this._q){const q=this._q.toLowerCase();items=items.filter(j=>(j.title||'').toLowerCase().includes(q)||U.strip(j.content).toLowerCase().includes(q));}
+    if(this._sort==='new')items.sort((a,b)=>new Date(b.date)-new Date(a.date));else items.sort((a,b)=>new Date(a.date)-new Date(b.date));
     const el=document.getElementById('jour-tl');
-    if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📓</div><div class="empty-t">No journal entries</div><div class="empty-s">Start your journaling journey today ✨</div></div>`;return;}
+    if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📓</div><div class="empty-t">${this._q?'No results':'No journal entries'}</div><div class="empty-s">${this._q?'Try different keywords':'Start your journaling journey today ✨'}</div></div>`;return;}
     const grps=U.grpDate(items,'date');const dates=Object.keys(grps).sort((a,b)=>this._sort==='new'?(b>a?1:-1):(a>b?1:-1));
     el.innerHTML=dates.map(ds=>{const ents=grps[ds];const lbl=U.rel(ds);
     return`<div class="tl-group"><div class="tl-label"><span title="${U.fdate(ds)}">${lbl===ds?U.fshort(ds):lbl}</span></div>${ents.map((j,i)=>`<div class="tl-entry fu"><div class="tl-spine"><div class="tl-dot"></div>${i<ents.length-1?'<div class="tl-line"></div>':''}</div><div class="tl-card" onclick="App.jview.open('${j.id}','journal')"><div class="tl-ch"><div class="tl-ct">${j.mood?j.mood+' ':''}${j.title||'Untitled'}</div><div class="tl-tm">${U.ftime(j.date)}</div></div><div class="tl-cx">${U.strip(j.content).slice(0,120)||'No content'}</div>${j.photos&&j.photos.length?`<div class="tl-photos">${j.photos.slice(0,3).map(p=>`<img src="${p}" class="tl-photo" onclick="event.stopPropagation();App.photo('${p}')" loading="lazy">`).join('')}${j.photos.length>3?`<div class="tl-more">+${j.photos.length-3}</div>`:''}</div>`:''}</div></div>`).join('')}</div>`;
     }).join('');
   },
-  srt(s,btn){this._sort=s;document.querySelectorAll('#s-journal .vbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();}
+  srt(s,btn){this._sort=s;document.querySelectorAll('#s-journal .vbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();},
+  srch(q){this._q=q;this.render();}
 },
 
 // ══ JOURNAL VIEW (read-only) ══
@@ -832,7 +972,124 @@ jview:{_entry:null,_from:'journal',
   back(){App.go(this._from);},
   edit(){App.ed.open('journal',this._entry?.id);}
 },
-
+folders:{_editId:null,_ctxId:null,_sort:'new',
+  renderList(){
+    const el=document.getElementById('folders-list');if(!el)return;
+    if(!S.folders.length){
+      el.innerHTML=`<div class="empty"><div style="margin-bottom:10px"><img src="empty_folder.jpg" style="width:80px;height:80px;object-fit:contain"></div><div class="empty-t">No folders yet</div><div class="empty-s">Tap 📁 in the header to create your first folder</div></div>`;
+      return;
+    }
+    el.innerHTML=`<div class="folder-grid">${S.folders.map(f=>{
+      const count=S.notes.filter(n=>n.folderId===f.id).length;
+      const icon=count>0?'filled_folder.jpg':'empty_folder.jpg';
+      return`<div class="folder-card fu" onclick="App.folders.openFilter('${f.id}')">
+        <img src="${icon}" class="folder-icon">
+        <div style="flex:1;min-width:0">
+          <div class="folder-name">${f.name}</div>
+          <div class="folder-count">${count} note${count!==1?'s':''}</div>
+        </div>
+        <button class="folder-menu-btn" onclick="event.stopPropagation();App.folders.openCtx('${f.id}')">⋯</button>
+      </div>`;
+    }).join('')}</div>`;
+  },
+  newFolder(){
+    this._editId=null;this._sort='new';
+    document.getElementById('folder-modal-title').textContent='📁 New Folder';
+    document.getElementById('folder-name-inp').value='';
+    document.getElementById('folder-del-btn').style.display='none';
+    document.querySelectorAll('#folder-sort-row .chip').forEach(b=>b.classList.toggle('on',b.dataset.fsort==='new'));
+    document.getElementById('m-folder').classList.add('open');
+    setTimeout(()=>document.getElementById('folder-name-inp').focus(),300);
+  },
+  openCtx(id){
+    this._ctxId=id;
+    const f=S.folders.find(f=>f.id===id);if(!f)return;
+    document.getElementById('fctx-title').textContent='📁 '+f.name;
+    document.getElementById('m-fctx').classList.add('open');
+  },
+  openEdit(){
+    document.getElementById('m-fctx').classList.remove('open');
+    const f=S.folders.find(f=>f.id===this._ctxId);if(!f)return;
+    this._editId=this._ctxId;this._sort=f.sort||'new';
+    document.getElementById('folder-modal-title').textContent='✏️ Rename Folder';
+    document.getElementById('folder-name-inp').value=f.name;
+    document.getElementById('folder-del-btn').style.display='block';
+    document.querySelectorAll('#folder-sort-row .chip').forEach(b=>b.classList.toggle('on',b.dataset.fsort===this._sort));
+    document.getElementById('m-folder').classList.add('open');
+    setTimeout(()=>document.getElementById('folder-name-inp').focus(),300);
+  },
+  openFilter(id){
+    document.getElementById('m-fctx').classList.remove('open');
+    const fid=id||this._ctxId;
+    const f=S.folders.find(f=>f.id===fid);if(!f)return;
+    // Switch notes screen to notes tab, filter by folder
+    App.notes._fid=fid;App.notes._tab='notes';
+    document.getElementById('folder-active-bar').style.display='flex';
+    document.getElementById('folder-active-name').textContent=f.name;
+    document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('on'));
+    document.getElementById('ntab-notes').classList.add('on');
+    document.getElementById('notes-pane').style.display='flex';
+    document.getElementById('folders-pane').style.display='none';
+    App.notes.render();App.go('notes');
+  },
+  clearFilter(){
+    App.notes._fid=null;
+    document.getElementById('folder-active-bar').style.display='none';
+    App.notes.render();
+  },
+  setSort(s,btn){
+    this._sort=s;
+    document.querySelectorAll('#folder-sort-row .chip').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  },
+  save(){
+    const name=document.getElementById('folder-name-inp').value.trim();
+    if(!name){toast('Please enter a folder name','⚠️');return;}
+    if(this._editId){
+      const f=S.folders.find(f=>f.id===this._editId);
+      if(f){f.name=name;f.sort=this._sort;}
+    }else{
+      S.folders.push({id:U.uid(),name,sort:this._sort,createdAt:U.now()});
+    }
+    S.saveFolders();document.getElementById('m-folder').classList.remove('open');
+    this.renderList();toast(this._editId?'Folder renamed 📁':'Folder created 📁');
+  },
+  confirmDel(){
+    document.getElementById('m-fctx').classList.remove('open');
+    document.getElementById('m-folder').classList.remove('open');
+    const id=this._editId||this._ctxId;
+    const f=S.folders.find(f=>f.id===id);if(!f)return;
+    if(!confirm(`Delete folder "${f.name}"?\nNotes inside will be unassigned.`))return;
+    this._doDelete(id);
+  },
+  async _doDelete(id){
+    S.folders=S.folders.filter(f=>f.id!==id);S.saveFolders();
+    for(const n of S.notes){if(n.folderId===id){n.folderId=null;await DB.put('notes',n);}}
+    if(App.notes._fid===id)this.clearFilter();
+    this.renderList();toast('Folder deleted','🗑️');
+  },
+  openMoveModal(){
+    if(App.ed._type!=='note')return;
+    const el=document.getElementById('move-folder-list');
+    if(!S.folders.length){toast('Create a folder first','💡');return;}
+    const curFid=App.ed._id?S.notes.find(n=>n.id===App.ed._id)?.folderId:null;
+    el.innerHTML=S.folders.map(f=>`<div class="sitem" onclick="App.folders.moveTo('${f.id}')">
+      <div class="sil">
+        <img src="${S.notes.filter(n=>n.folderId===f.id).length>0?'filled_folder.jpg':'empty_folder.jpg'}" style="width:34px;height:34px;object-fit:contain">
+        <div><div class="s-t">${f.name}${curFid===f.id?' ✓':''}</div>
+        <div class="s-sub">${S.notes.filter(n=>n.folderId===f.id).length} notes</div></div>
+      </div>
+    </div>`).join('');
+    document.getElementById('m-movefolder').classList.add('open');
+  },
+  async moveTo(fid){
+    document.getElementById('m-movefolder').classList.remove('open');
+    if(!App.ed._id||App.ed._type!=='note')return;
+    const note=S.notes.find(n=>n.id===App.ed._id);
+    if(note){note.folderId=fid||null;await DB.put('notes',note);}
+    toast(fid?`Moved to folder 📁`:'Removed from folder');
+  }
+},
 cal:{_view:'month',_cur:new Date(),_sel:new Date(),_ctr:'dr-cal',
   render(ctr){if(ctr)this._ctr=ctr;const c=document.getElementById(this._ctr);if(!c)return;c.style.cssText='display:flex;flex-direction:column;flex:1;overflow:hidden';
     const vs=`<div style="padding:7px 10px;border-bottom:1px solid var(--border);flex-shrink:0"><div class="vsw">${['month','week','day','agenda'].map(v=>`<button class="vbtn${this._view===v?' on':''}" onclick="App.cal.view('${v}',this)">${v==='month'?'Month':v==='week'?'Week':v==='day'?'Day':'List'}</button>`).join('')}</div></div>`;
@@ -854,7 +1111,7 @@ cal:{_view:'month',_cur:new Date(),_sel:new Date(),_ctr:'dr-cal',
     else{if(se.notes.length){det+=`<div class="sec-t" style="margin-bottom:7px;font-size:13px">📝 Notes</div>`;det+=se.notes.map(n=>`<div class="card" onclick="App.ed.open('note','${n.id}')"><div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,80)}</div></div>`).join('');}
     if(se.journals.length){det+=`<div class="sec-t" style="margin:10px 0 7px;font-size:13px">📓 Journal</div>`;det+=se.journals.map(j=>`<div class="card" onclick="App.jview.open('${j.id}','calendar')"><div class="c-title">${j.mood||''}${j.title||'Untitled'}</div><div class="c-excerpt">${U.strip(j.content).slice(0,80)}</div></div>`).join('');}
     if(se.reminders.length){det+=`<div class="sec-t" style="margin:10px 0 7px;font-size:13px">⏰ Reminders</div>`;det+=se.reminders.map(r=>`<div class="rem-item ${r.done?'rem-done':''}"><button class="rem-chk ${r.done?'done':''}" onclick="App.rem.done('${r.id}')">${r.done?'✓':''}</button><div class="rem-title">${r.title}</div><div class="rem-time">${U.ftime(r.datetime)}</div></div>`).join('');}}
-    c.innerHTML=`${vs}<div style="flex-shrink:0"><div class="cal-nav"><button class="ibtn" onclick="App.cal.pm()">‹</button><span class="cal-ml">${ml}</span><button class="ibtn" onclick="App.cal.nm()">›</button></div><div class="cal-legend"><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--primary)"></span>Note</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--secondary)"></span>Journal</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>Reminder</span></div><div class="cal-dow-row">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div><div class="cal-grid">${cells}</div></div><div class="cal-detail">${det}</div>`;
+    c.innerHTML=`${vs}<div style="flex-shrink:0"><div class="cal-nav"><button class="ibtn" onclick="App.cal.pm()">‹</button><span class="cal-ml">${ml}</span><button class="ibtn" onclick="App.cal.nm()">›</button></div><div class="cal-legend"><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--primary)"></span>Note</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--secondary)"></span>Journal</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>Reminder</span></div><div class="cal-combined">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div></div><div class="cal-detail">${det}</div>`;
   },
   week(c,vs){const d=new Date(this._cur),dow=d.getDay();const sow=new Date(d);sow.setDate(d.getDate()-dow);const wdays=Array.from({length:7},(_,i)=>{const w=new Date(sow);w.setDate(sow.getDate()+i);return w;});const today=new Date();today.setHours(0,0,0,0);const wl=`${wdays[0].toLocaleDateString('en-MY',{month:'short',day:'numeric'})} – ${wdays[6].toLocaleDateString('en-MY',{month:'short',day:'numeric',year:'numeric'})}`;
   let hr=`<div style="width:34px"></div>`;wdays.forEach(wd=>{const iT=wd.getTime()===today.getTime();const e=this.ents(wd.toISOString().split('T')[0]);const hasE=e.notes.length||e.journals.length;hr+=`<div class="week-dh" style="${iT?'color:var(--primary)':''}">${['Su','Mo','Tu','We','Th','Fr','Sa'][wd.getDay()]}<span class="${iT?'week-num tod':'week-num'}">${wd.getDate()}</span>${hasE?`<div style="display:flex;justify-content:center;gap:2px;margin-top:1px">${e.notes.length?'<div style="width:4px;height:4px;border-radius:50%;background:var(--primary)"></div>':''}${e.journals.length?'<div style="width:4px;height:4px;border-radius:50%;background:var(--secondary)"></div>':''}</div>`:''}</div>`;});
@@ -871,17 +1128,19 @@ cal:{_view:'month',_cur:new Date(),_sel:new Date(),_ctr:'dr-cal',
 },
 
 ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF',_range:null,_asT:null,
+ _audioClips:[],_mediaRec:null,_recChunks:[],_recSecs:0,_recTimer:null,
   open(type,id=null){
-    App.fab.close();this._type=type;this._id=id;this._photos=[];this._pinned=false;this._mood=null;
+    App.fab.close();this._type=type;this._id=id;this._photos=[];this._audioClips=[];this._pinned=false;this._mood=null;
     const badge=document.getElementById('ed-badge');badge.textContent=type==='note'?'📝 Note':'📓 Journal';badge.className='ed-badge '+(type==='note'?'b-note':'b-jour');
     document.getElementById('ed-meta').style.display=type==='journal'?'flex':'none';
     document.getElementById('del-btn').style.display=id?'flex':'none';
+    document.getElementById('folder-btn').style.display=type==='note'?'flex':'none';
     document.getElementById('as-ind').textContent='';
     document.getElementById('ed-dl').textContent=U.fdate(U.now());
     if(id){const data=type==='note'?S.notes.find(n=>n.id===id):S.journals.find(j=>j.id===id);
-    if(data){document.getElementById('ed-t').value=data.title||'';document.getElementById('ed-c').innerHTML=data.content||'';this._photos=[...(data.photos||[])];this._pinned=data.pinned||false;if(type==='journal'){this._mood=data.mood||null;document.getElementById('ed-dl').textContent=U.fdate(data.date);document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('on',b.textContent===data.mood));}}
+    if(data){document.getElementById('ed-t').value=data.title||'';document.getElementById('ed-c').innerHTML=data.content||'';this._photos=[...(data.photos||[])];this._audioClips=[...(data.audioClips||[])];this._pinned=data.pinned||false;if(type==='journal'){this._mood=data.mood||null;document.getElementById('ed-dl').textContent=U.fdate(data.date);document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('on',b.textContent===data.mood));}}
     }else{document.getElementById('ed-t').value='';document.getElementById('ed-c').innerHTML='';document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));}
-    document.getElementById('pin-btn').textContent=this._pinned?'📌':'📍';this._rPh();
+    this._photos=[...(data.photos||[])];this._audioClips=[...(data.audioClips||[])];this._pinned=data.pinned||false;
     const ta=document.getElementById('ed-t');ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
     document.getElementById('m-ed').classList.add('open');
     if(!id)setTimeout(()=>document.getElementById('ed-t').focus(),450);
@@ -891,7 +1150,7 @@ ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF
     const title=document.getElementById('ed-t').value.trim();const content=document.getElementById('ed-c').innerHTML.trim();
     if(!title&&!content&&!this._photos.length)return;
     const now=U.now();const id=this._id||(this._id=U.uid());
-    if(this._type==='note'){const ex=S.notes.find(n=>n.id===id);const note={id,title,content,photos:this._photos,pinned:this._pinned,createdAt:ex?.createdAt||now,updatedAt:now};await DB.put('notes',note);const i=S.notes.findIndex(n=>n.id===id);if(i>=0)S.notes[i]=note;else S.notes.push(note);}
+    if(this._type==='note'){const ex=S.notes.find(n=>n.id===id);const note={id,title,content,photos:this._photos,audioClips:this._audioClips,pinned:this._pinned,folderId:ex?.folderId||null,createdAt:ex?.createdAt||now,updatedAt:now};await DB.put('notes',note);const i=S.notes.findIndex(n=>n.id===id);if(i>=0)S.notes[i]=note;else S.notes.push(note);}
     else{const ex=S.journals.find(j=>j.id===id);const jour={id,title,content,photos:this._photos,mood:this._mood,date:ex?.date||now,createdAt:ex?.createdAt||now,updatedAt:now};await DB.put('journals',jour);const i=S.journals.findIndex(j=>j.id===id);if(i>=0)S.journals[i]=jour;else S.journals.push(jour);}
     if(ind){document.getElementById('as-ind').textContent='Saved ✓';setTimeout(()=>{try{document.getElementById('as-ind').textContent='';}catch(e){}},2000);}
   },
@@ -926,7 +1185,52 @@ ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF
   do_tbl(){const cols=parseInt(document.getElementById('tbl-c').value)||3,rows=parseInt(document.getElementById('tbl-r').value)||3,col=this._tblColor||'#EDE9FF';let h=`<table class="Dayrift-table"><thead><tr>`;for(let c=0;c<cols;c++)h+=`<th style="background:${col}" contenteditable="true">Column ${c+1}</th>`;h+=`</tr></thead><tbody>`;for(let r=0;r<rows;r++){h+=`<tr>`;for(let c=0;c<cols;c++)h+=`<td contenteditable="true"></td>`;h+=`</tr>`;}h+=`</tbody></table><p><br></p>`;this._rr();document.getElementById('ed-c').focus();document.execCommand('insertHTML',false,h);document.getElementById('m-tbl').classList.remove('open');},
   photos(e){Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{this._photos.push(ev.target.result);this._rPh();};r.readAsDataURL(f);});e.target.value='';},
   _rPh(){document.getElementById('ed-photos').innerHTML=this._photos.map((p,i)=>`<div class="ed-pw"><img src="${p}" onclick="App.photo('${p}')"><button class="ph-rm" onclick="App.ed._rmP(${i})">✕</button></div>`).join('');},
-  _rmP(i){this._photos.splice(i,1);this._rPh();}
+  _rmP(i){this._photos.splice(i,1);this._rPh();},
+  _rAudio(){
+    const el=document.getElementById('ed-audios');if(!el)return;
+    el.innerHTML=this._audioClips.map((src,i)=>`<div class="ed-audio-wrap">
+      <audio controls src="${src}"></audio>
+      <button onclick="App.ed._rmAudio(${i})" style="width:28px;height:28px;border-radius:50%;background:var(--sec-pale);border:none;cursor:pointer;font-size:14px;color:var(--secondary);flex-shrink:0">🗑️</button>
+    </div>`).join('');
+  },
+  _rmAudio(i){this._audioClips.splice(i,1);this._rAudio();},
+  async voiceToggle(){
+    if(this._mediaRec&&this._mediaRec.state==='recording'){this.voiceStop(false);return;}
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      this._recChunks=[];this._recSecs=0;
+      const mime=MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'audio/webm';
+      this._mediaRec=new MediaRecorder(stream,{mimeType:mime});
+      this._mediaRec.ondataavailable=e=>{if(e.data.size>0)this._recChunks.push(e.data);};
+      this._mediaRec.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        const blob=new Blob(this._recChunks,{type:this._mediaRec.mimeType});
+        const reader=new FileReader();
+        reader.onload=ev=>{this._audioClips.push(ev.target.result);this._rAudio();};
+        reader.readAsDataURL(blob);
+        this._stopRecUI();
+      };
+      this._mediaRec.start();
+      document.getElementById('voice-bar').classList.add('active');
+      document.getElementById('voice-btn').style.cssText='color:var(--secondary);background:var(--sec-pale)';
+      this._recTimer=setInterval(()=>{
+        this._recSecs++;
+        const m=Math.floor(this._recSecs/60),s=this._recSecs%60;
+        document.getElementById('voice-time').textContent=`${m}:${String(s).padStart(2,'0')}`;
+      },1000);
+    }catch(e){toast('Microphone access denied','⚠️');}
+  },
+  voiceStop(discard=false){
+    if(!this._mediaRec)return;
+    if(discard){this._mediaRec.stream?.getTracks().forEach(t=>t.stop());this._mediaRec=null;this._stopRecUI();}
+    else if(this._mediaRec.state==='recording')this._mediaRec.stop();
+  },
+  _stopRecUI(){
+    clearInterval(this._recTimer);this._recTimer=null;this._recSecs=0;
+    document.getElementById('voice-bar').classList.remove('active');
+    const b=document.getElementById('voice-btn');if(b)b.style.cssText='';
+    this._mediaRec=null;
+  }
 },
 
 rem:{_timers:[],
@@ -1032,7 +1336,7 @@ dtm:{_mode:'pick',_fmt:'both',
 photo(src){document.getElementById('ph-view-img').src=src;document.getElementById('ph-view').classList.add('open');},
 
 async init(){
-  S.loadCfg();await DB.init();
+  S.loadCfg();S.loadFolders();await DB.init();
   S.notes=await DB.all('notes');S.journals=await DB.all('journals');S.reminders=await DB.all('reminders');
   App.cfg.applyTheme();applyColor(S.cfg.color||'lavender');App.cfg.applyNotif();
   App.rem.schedAll();App.rem.checkMissed();
