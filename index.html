@@ -1134,7 +1134,7 @@ ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF
     const badge=document.getElementById('ed-badge');badge.textContent=type==='note'?'📝 Note':'📓 Journal';badge.className='ed-badge '+(type==='note'?'b-note':'b-jour');
     document.getElementById('ed-meta').style.display=type==='journal'?'flex':'none';
     document.getElementById('del-btn').style.display=id?'flex':'none';
-    document.getElementById('folder-btn').style.display=type==='note'?'flex':'none';
+    const fb=document.getElementById('folder-btn');if(fb)fb.style.display=type==='note'?'flex':'none';
     document.getElementById('as-ind').textContent='';
     document.getElementById('ed-dl').textContent=U.fdate(U.now());
     if(id){const data=type==='note'?S.notes.find(n=>n.id===id):S.journals.find(j=>j.id===id);
@@ -1211,7 +1211,7 @@ ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF
         this._stopRecUI();
       };
       this._mediaRec.start();
-      document.getElementById('voice-bar').classList.add('active');
+      const vb=document.getElementById('voice-bar');if(vb)vb.classList.add('active');
       document.getElementById('voice-btn').style.cssText='color:var(--secondary);background:var(--sec-pale)';
       this._recTimer=setInterval(()=>{
         this._recSecs++;
@@ -1227,7 +1227,7 @@ ed:{_type:'note',_id:null,_photos:[],_pinned:false,_mood:null,_tblColor:'#EDE9FF
   },
   _stopRecUI(){
     clearInterval(this._recTimer);this._recTimer=null;this._recSecs=0;
-    document.getElementById('voice-bar').classList.remove('active');
+    const vba=document.getElementById('voice-bar');if(vba)vba.classList.remove('active');
     const b=document.getElementById('voice-btn');if(b)b.style.cssText='';
     this._mediaRec=null;
   }
