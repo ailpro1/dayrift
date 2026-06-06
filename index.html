@@ -180,7 +180,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);padding:5px 10px 0}
 .cal-dow{font-size:10px;font-weight:800;color:var(--text2);text-align:center;text-transform:uppercase;letter-spacing:.3px;padding:3px 0}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px 10px 8px}
-.cal-d{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;border-radius:50%;cursor:pointer;transition:background .15s}
+.cal-d{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;border-radius:8px;cursor:pointer;transition:background .15s} .cal-dn, .cal-dots { pointer-events: none; }
 .cal-d:active{background:var(--primary-pale)}
 .cal-d.today{background:var(--primary)}.cal-d.today .cal-dn{color:#fff}.cal-d.today .cal-dot{background:rgba(255,255,255,.75)}
 .cal-d.sel:not(.today){background:var(--primary-pale)}
@@ -360,6 +360,14 @@ input[type=file]{display:none}
 
 /* ── CALENDAR FIX — single combined grid ─────── */
 .cal-combined{display:grid;grid-template-columns:repeat(7,1fr);padding:2px 8px 8px}
+.context-menu { position: fixed; z-index: 10000; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--sh-lg); padding: 6px; min-width: 160px; display: none; opacity: 0; transform: scale(0.95); transition: opacity .15s, transform .15s; }
+.context-menu.open { display: block; opacity: 1; transform: scale(1); }
+.ctx-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 14px; font-weight: 700; color: var(--text); border-radius: 8px; cursor: pointer; }
+.ctx-item:active { background: var(--surface-2); }
+.ctx-item.del { color: #FF5252; }
+.throwback { background: linear-gradient(135deg, var(--primary-pale), var(--sec-pale)); border-radius: var(--r); padding: 16px; margin-bottom: 16px; cursor: pointer; border: 1px solid var(--border); box-shadow: var(--sh-sm); }
+.throwback-t { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.throwback-c { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
 </head>
 <body>
@@ -379,6 +387,7 @@ input[type=file]{display:none}
         <div class="stat"><div class="stat-ic">🔥</div><div class="stat-n" id="sn-s">0</div><div class="stat-l">Streak</div></div>
       </div>
     </div>
+    <div id="h-throwback"></div>
     <div class="sec-hdr fu"><span class="sec-t">Recent Notes</span><button class="see-all" onclick="App.go('notes')">See all →</button></div>
     <div id="h-notes"></div>
     <div class="sec-hdr fu" style="margin-top:4px"><span class="sec-t">Recent Journal</span><button class="see-all" onclick="App.go('journal')">See all →</button></div>
@@ -561,7 +570,7 @@ input[type=file]{display:none}
       </div>
       <div style="display:flex;align-items:center;gap:7px">
         <span class="as-ind" id="as-ind"></span>
-        <button class="ibtn" id="folder-btn" onclick="App.folders.openMoveModal()" title="Move to folder" style="display:none">📁</button>
+        <button class="ibtn" id="folder-btn" onclick="App.folders.openMoveModal()" style="display:none; width:auto; padding:0 12px; border-radius:20px; font-size:13px; font-weight:700; white-space:nowrap;"><span style="margin-right:4px; font-size:15px;">📁</span> Add to Folder</button>
         <button class="ibtn" id="pin-btn" onclick="App.ed.pin()" title="Pin">📍</button>
         <button class="ibtn" id="del-btn" onclick="App.ed.del()" style="display:none">🗑️</button>
       
@@ -753,6 +762,13 @@ input[type=file]{display:none}
 </div>
 <div class="toast-wrap" id="toast-wrap"></div>
 
+<div id="ctx-menu" class="context-menu">
+  <div class="ctx-item" onclick="App.ctx.edit()">✏️ Edit</div>
+  <div class="ctx-item" onclick="App.ctx.pin()">📌 Pin / Unpin</div>
+  <div class="ctx-item" onclick="App.ctx.move()">📁 Move to Folder</div>
+  <div class="ctx-item del" onclick="App.ctx.delete()">🗑️ Delete</div>
+</div>
+
 <script>
 // ── COLORS ────────────────────────────────────────────────────────────────────
 const COLORS={lavender:['#8875C7','#B4A8E0','#EDE9FF'],rose:['#C4607A','#E0A0B4','#FDEAF0'],ocean:['#4A90C4','#88BBE0','#E0F0FF'],sage:['#5D9068','#90C49B','#E5F3E8'],sunset:['#D47844','#E8AA80','#FEF0E5'],indigo:['#5B5E9E','#9598C8','#EEEEFF']};
@@ -823,6 +839,57 @@ function toast(msg,ic='✓'){const e=document.createElement('div');e.className='
 // ── APP ───────────────────────────────────────────────────────────────────────
 const App={
 
+ctx: {
+  id: null, type: null, timer: null,
+  start(e, id, type) {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { e.preventDefault(); this.show(e, id, type); }, 500);
+  },
+  cancel() { clearTimeout(this.timer); },
+  show(e, id, type) {
+    this.id = id; this.type = type;
+    const m = document.getElementById('ctx-menu');
+    let x = e.touches ? e.touches[0].clientX : e.clientX;
+    let y = e.touches ? e.touches[0].clientY : e.clientY;
+    if(x + 160 > window.innerWidth) x = window.innerWidth - 170;
+    if(y + 160 > window.innerHeight) y = window.innerHeight - 170;
+    m.style.left = x + 'px'; m.style.top = y + 'px';
+    m.classList.add('open');
+    App.fab.close();
+  },
+  hide() { document.getElementById('ctx-menu').classList.remove('open'); },
+  edit() { this.hide(); if(this.type==='notes') App.ed.open('note', this.id); else App.jview.open(this.id, 'home'); },
+  async pin() { 
+    this.hide(); 
+    const item = S[this.type].find(x => x.id === this.id);
+    if(item) { item.pinned = !item.pinned; await DB.put(this.type, item); App.home.render(); App.notes.render(); toast(item.pinned ? 'Pinned 📌' : 'Unpinned'); }
+  },
+  move() { this.hide(); App.ed._id = this.id; App.ed._type = this.type === 'notes' ? 'note' : 'journal'; App.folders.openMoveModal(); },
+  async delete() {
+    this.hide();
+    if(confirm('Delete this item?')) {
+      await DB.del(this.type, this.id);
+      S[this.type] = S[this.type].filter(x => x.id !== this.id);
+      App.home.render(); App.notes.render(); App.jour.render(); toast('Deleted 🗑️');
+    }
+  }
+},
+
+throwback: {
+  render() {
+    const el = document.getElementById('h-throwback'); if(!el) return;
+    const today = new Date();
+    const match = S.journals.find(j => {
+      const d = new Date(j.date);
+      return d.getMonth() === today.getMonth() && d.getDate() === today.getDate() && d.getFullYear() < today.getFullYear();
+    });
+    if(match) {
+      const yrs = today.getFullYear() - new Date(match.date).getFullYear();
+      el.innerHTML = `<div class="throwback fu" onclick="App.jview.open('${match.id}','home')"><div class="throwback-t"><span>⏳</span> On this day ${yrs} year${yrs>1?'s':''} ago</div><div class="throwback-c">${match.title || 'Untitled Entry'}</div><div style="font-size:12px;color:var(--text2)">${U.strip(match.content).slice(0,80)}</div></div>`;
+    } else el.innerHTML = '';
+  }
+},
+
 fab:{_o:false,toggle(){this._o?this.close():this.open();},open(){this._o=true;['fab','fab-menu','fab-ov'].forEach(id=>document.getElementById(id).classList.add('open'));},close(){this._o=false;['fab','fab-menu','fab-ov'].forEach(id=>document.getElementById(id).classList.remove('open'));}},
 
 go(sc){
@@ -856,9 +923,9 @@ home:{
 document.getElementById('greet-s').textContent=this.subs[Math.floor(Math.random()*this.subs.length)];
     document.getElementById('sn-n').textContent=S.notes.length;document.getElementById('sn-j').textContent=S.journals.length;document.getElementById('sn-s').textContent=this.streak();
     const rn=[...S.notes].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,3);
-    document.getElementById('h-notes').innerHTML=rn.length?rn.map(n=>`<div class="card fu" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,100)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span></div></div>`).join(''):`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">No notes yet</div><div class="empty-s">Tap + to create your first note</div></div>`;
+    document.getElementById('h-notes').innerHTML=rn.length?rn.map(n=>`<div class="card fu" data-id="${n.id}" data-type="notes" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,100)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span></div></div>`).join(''):`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">No notes yet</div><div class="empty-s">Tap + to create your first note</div></div>`;
 const rj=[...S.journals].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,2);
-    document.getElementById('h-jour').innerHTML=rj.length?rj.map(j=>{const ph=j.photos&&j.photos[0]?`<img src="${j.photos[0]}" class="c-photo" onclick="event.stopPropagation();App.photo('${j.photos[0]}')" loading="lazy">`:'';return`<div class="card fu" onclick="App.jview.open('${j.id}','home')"><div style="overflow:hidden">${ph}<div class="c-title">${j.mood?j.mood+' ':''}${j.title||'Untitled'}</div><div class="c-excerpt">${U.strip(j.content).slice(0,100)||'No content'}</div><div class="c-meta"><span class="c-date">${U.fshort(j.date)}</span></div></div></div>`;}).join(''):`<div class="empty"><div class="empty-ic">📓</div><div class="empty-t">No journal entries</div><div class="empty-s">Start journaling today</div></div>`;
+    document.getElementById('h-jour').innerHTML=rj.length?rj.map(j=>{const ph=j.photos&&j.photos[0]?`<img src="${j.photos[0]}" class="c-photo" onclick="event.stopPropagation();App.photo('${j.photos[0]}')" loading="lazy">`:'';return`<div class="card fu" data-id="${j.id}" data-type="journals" onclick="App.jview.open('${j.id}','home')"><div style="overflow:hidden">${ph}<div class="c-title">${j.mood?j.mood+' ':''}${j.title||'Untitled'}</div><div class="c-excerpt">${U.strip(j.content).slice(0,100)||'No content'}</div><div class="c-meta"><span class="c-date">${U.fshort(j.date)}</span></div></div></div>`;}).join(''):`<div class="empty"><div class="empty-ic">📓</div><div class="empty-t">No journal entries</div><div class="empty-s">Start journaling today</div></div>`;
 const ru=S.reminders.filter(r=>!r.done&&new Date(r.datetime)>new Date()).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).slice(0,3);
     document.getElementById('h-rem').innerHTML=ru.length?ru.map(r=>`<div class="rem-item fu"><button class="rem-chk" onclick="App.rem.done('${r.id}')"></button><div style="flex:1"><div class="rem-title">${r.title}</div>${r.notes?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${r.notes}</div>`:''}</div><div class="rem-time">${U.fdt(r.datetime)}</div></div>`).join(''):`<div class="empty"><div class="empty-ic">⏰</div><div class="empty-t">No upcoming reminders</div><div class="empty-s">Tap + to set a reminder</div></div>`;
 },
@@ -891,7 +958,7 @@ else if(this._sort==='az')a.sort((a,b)=>(a.title||'').localeCompare(b.title||'')
 if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">${this._fid?'No notes in this folder':'No notes yet'}</div><div class="empty-s">Tap + to create a note</div></div>`;return;}
     el.innerHTML=items.map(n=>{
       const f=n.folderId?S.folders.find(x=>x.id===n.folderId):null;
-      return`<div class="card fu" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,120)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span>${f?`<span style="font-size:10px;color:var(--primary);font-weight:700;background:var(--primary-pale);padding:2px 7px;border-radius:10px">📁 ${f.name}</span>`:''}</div></div>`;
+      return`<div class="card fu" data-id="${n.id}" data-type="notes" onclick="App.ed.open('note','${n.id}')">${n.pinned?'<span class="card-pin">📌</span>':''}<div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,120)||'No content'}</div><div class="c-meta"><span class="c-date">${U.rel(n.updatedAt)}</span>${f?`<span style="font-size:10px;color:var(--primary);font-weight:700;background:var(--primary-pale);padding:2px 7px;border-radius:10px">📁 ${f.name}</span>`:''}</div></div>`;
     }).join('');
 },
   mainTab(t,btn){
@@ -915,7 +982,7 @@ if(this._q){const q=this._q.toLowerCase();items=items.filter(j=>(j.title||'').to
 if(!items.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📓</div><div class="empty-t">${this._q?'No results':'No journal entries'}</div><div class="empty-s">${this._q?'Try different keywords':'Start your journaling journey today ✨'}</div></div>`;return;}
     const grps=U.grpDate(items,'date');const dates=Object.keys(grps).sort((a,b)=>this._sort==='new'?(b>a?1:-1):(a>b?1:-1));
 el.innerHTML=dates.map(ds=>{const ents=grps[ds];const lbl=U.rel(ds);
-    return`<div class="tl-group"><div class="tl-label"><span title="${U.fdate(ds)}">${lbl===ds?U.fshort(ds):lbl}</span></div>${ents.map((j,i)=>`<div class="tl-entry fu"><div class="tl-spine"><div class="tl-dot"></div>${i<ents.length-1?'<div class="tl-line"></div>':''}</div><div class="tl-card" onclick="App.jview.open('${j.id}','journal')"><div class="tl-ch"><div class="tl-ct">${j.mood?j.mood+' ':''}${j.title||'Untitled'}</div><div class="tl-tm">${U.ftime(j.date)}</div></div><div class="tl-cx">${U.strip(j.content).slice(0,120)||'No content'}</div>${j.photos&&j.photos.length?`<div class="tl-photos">${j.photos.slice(0,3).map(p=>`<img src="${p}" class="tl-photo" onclick="event.stopPropagation();App.photo('${p}')" loading="lazy">`).join('')}${j.photos.length>3?`<div class="tl-more">+${j.photos.length-3}</div>`:''}</div>`:''}</div></div>`).join('')}</div>`;
+    return`<div class="tl-group"><div class="tl-label"><span title="${U.fdate(ds)}">${lbl===ds?U.fshort(ds):lbl}</span></div>${ents.map((j,i)=>`<div class="tl-entry fu"><div class="tl-spine"><div class="tl-dot"></div>${i<ents.length-1?'<div class="tl-line"></div>':''}</div><div class="tl-card" data-id="${j.id}" data-type="journals" data-id="${j.id}" data-type="journals" onclick="App.jview.open('${j.id}','journal')"><div class="tl-ch"><div class="tl-ct">${j.mood?j.mood+' ':''}${j.title||'Untitled'}</div><div class="tl-tm">${U.ftime(j.date)}</div></div><div class="tl-cx">${U.strip(j.content).slice(0,120)||'No content'}</div>${j.photos&&j.photos.length?`<div class="tl-photos">${j.photos.slice(0,3).map(p=>`<img src="${p}" class="tl-photo" onclick="event.stopPropagation();App.photo('${p}')" loading="lazy">`).join('')}${j.photos.length>3?`<div class="tl-more">+${j.photos.length-3}</div>`:''}</div>`:''}</div></div>`).join('')}</div>`;
     }).join('');
 },
   srt(s,btn){this._sort=s;document.querySelectorAll('#s-journal .vbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');this.render();},
@@ -1095,16 +1162,16 @@ cells+=`<div class="cal-d ${iT?'today':''} ${iS&&!iT?'sel':''}" onclick="App.cal
 const se=this.ents(sel);const sd=this._sel.toLocaleDateString('en-MY',{weekday:'long',month:'long',day:'numeric'});
     let det=`<div class="cal-dd">${sd}</div>`;
     if(!se.notes.length&&!se.journals.length&&!se.reminders.length){det+=`<div class="empty" style="padding:14px 0"><div class="empty-ic" style="font-size:32px">🌿</div><div class="empty-s">Nothing on this day</div></div>`;}
-    else{if(se.notes.length){det+=`<div class="sec-t" style="margin-bottom:7px;font-size:13px">📝 Notes</div>`;det+=se.notes.map(n=>`<div class="card" onclick="App.ed.open('note','${n.id}')"><div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,80)}</div></div>`).join('');}
-    if(se.journals.length){det+=`<div class="sec-t" style="margin:10px 0 7px;font-size:13px">📓 Journal</div>`;det+=se.journals.map(j=>`<div class="card" onclick="App.jview.open('${j.id}','calendar')"><div class="c-title">${j.mood||''}${j.title||'Untitled'}</div><div class="c-excerpt">${U.strip(j.content).slice(0,80)}</div></div>`).join('');}
+    else{if(se.notes.length){det+=`<div class="sec-t" style="margin-bottom:7px;font-size:13px">📝 Notes</div>`;det+=se.notes.map(n=>`<div class="card" data-id="${n.id}" data-type="notes" onclick="App.ed.open('note','${n.id}')"><div class="c-title">${n.title||'Untitled'}</div><div class="c-excerpt">${U.strip(n.content).slice(0,80)}</div></div>`).join('');}
+    if(se.journals.length){det+=`<div class="sec-t" style="margin:10px 0 7px;font-size:13px">📓 Journal</div>`;det+=se.journals.map(j=>`<div class="card" data-id="${j.id}" data-type="journals" onclick="App.jview.open('${j.id}','calendar')"><div class="c-title">${j.mood||''}${j.title||'Untitled'}</div><div class="c-excerpt">${U.strip(j.content).slice(0,80)}</div></div>`).join('');}
     if(se.reminders.length){det+=`<div class="sec-t" style="margin:10px 0 7px;font-size:13px">⏰ Reminders</div>`;det+=se.reminders.map(r=>`<div class="rem-item ${r.done?'rem-done':''}"><button class="rem-chk ${r.done?'done':''}" onclick="App.rem.done('${r.id}')">${r.done?'✓':''}</button><div class="rem-title">${r.title}</div><div class="rem-time">${U.ftime(r.datetime)}</div></div>`).join('');}}
     c.innerHTML=`${vs}<div style="flex-shrink:0"><div class="cal-nav"><button class="ibtn" onclick="App.cal.pm()">‹</button><span class="cal-ml">${ml}</span><button class="ibtn" onclick="App.cal.nm()">›</button></div><div class="cal-legend"><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--primary)"></span>Note</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--secondary)"></span>Journal</span><span class="cal-leg"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>Reminder</span></div><div class="cal-combined">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div></div><div class="cal-detail">${det}</div>`;
 },
   week(c,vs){const d=new Date(this._cur),dow=d.getDay();const sow=new Date(d);sow.setDate(d.getDate()-dow);const wdays=Array.from({length:7},(_,i)=>{const w=new Date(sow);w.setDate(sow.getDate()+i);return w;});const today=new Date();today.setHours(0,0,0,0);const wl=`${wdays[0].toLocaleDateString('en-MY',{month:'short',day:'numeric'})} – ${wdays[6].toLocaleDateString('en-MY',{month:'short',day:'numeric',year:'numeric'})}`;
 let hr=`<div style="width:34px"></div>`;wdays.forEach(wd=>{const iT=wd.getTime()===today.getTime();const e=this.ents(wd.toISOString().split('T')[0]);const hasE=e.notes.length||e.journals.length;hr+=`<div class="week-dh" style="${iT?'color:var(--primary)':''}">${['Su','Mo','Tu','We','Th','Fr','Sa'][wd.getDay()]}<span class="${iT?'week-num tod':'week-num'}">${wd.getDate()}</span>${hasE?`<div style="display:flex;justify-content:center;gap:2px;margin-top:1px">${e.notes.length?'<div style="width:4px;height:4px;border-radius:50%;background:var(--primary)"></div>':''}${e.journals.length?'<div style="width:4px;height:4px;border-radius:50%;background:var(--secondary)"></div>':''}</div>`:''}</div>`;});
-let bc=`<div style="width:34px"></div>`;wdays.forEach(wd=>{const ds=wd.toISOString().split('T')[0];const e=this.ents(ds);let ev='';e.notes.forEach(n=>{ev+=`<div class="day-evt" onclick="App.ed.open('note','${n.id}')" style="font-size:10px">${(n.title||'Note').slice(0,10)}</div>`;});e.journals.forEach(j=>{ev+=`<div class="day-evt" style="background:var(--sec-pale);border-color:var(--secondary);color:var(--secondary);font-size:10px" onclick="App.jview.open('${j.id}','calendar')">${(j.title||'J').slice(0,10)}</div>`;});e.reminders.forEach(r=>{ev+=`<div class="day-evt" style="background:var(--acc-pale);border-color:var(--accent);color:var(--accent);font-size:10px">${r.title.slice(0,10)}</div>`;});bc+=`<div class="week-cell">${ev}</div>`;});
+let bc=`<div style="width:34px"></div>`;wdays.forEach(wd=>{const ds=wd.toISOString().split('T')[0];const e=this.ents(ds);let ev='';e.notes.forEach(n=>{ev+=`<div class="day-evt" data-id="${n.id}" data-type="notes" onclick="App.ed.open('note','${n.id}')" style="font-size:10px">${(n.title||'Note').slice(0,10)}</div>`;});e.journals.forEach(j=>{ev+=`<div class="day-evt" style="background:var(--sec-pale);border-color:var(--secondary);color:var(--secondary);font-size:10px" data-id="${j.id}" data-type="journals" onclick="App.jview.open('${j.id}','calendar')">${(j.title||'J').slice(0,10)}</div>`;});e.reminders.forEach(r=>{ev+=`<div class="day-evt" style="background:var(--acc-pale);border-color:var(--accent);color:var(--accent);font-size:10px">${r.title.slice(0,10)}</div>`;});bc+=`<div class="week-cell">${ev}</div>`;});
 c.innerHTML=`${vs}<div style="flex-shrink:0"><div class="cal-nav"><button class="ibtn" onclick="App.cal.pw()">‹</button><span class="cal-ml" style="font-size:14px">${wl}</span><button class="ibtn" onclick="App.cal.nw()">›</button></div></div><div style="flex:1;overflow-y:auto;scrollbar-width:none"><div class="week-hdr-row">${hr}</div><div class="week-body">${bc}</div></div>`;},
-  day(c,vs){const ds=this._sel.toISOString().split('T')[0];const e=this.ents(ds);const lbl=this._sel.toLocaleDateString('en-MY',{weekday:'short',month:'short',day:'numeric'});let slots='';for(let h=0;h<24;h++){const tl=h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;let ev='';e.reminders.forEach(r=>{if(new Date(r.datetime).getHours()===h)ev+=`<div class="day-evt" style="background:var(--acc-pale);border-color:var(--accent);color:var(--accent);font-size:11px">${r.title}</div>`;});e.notes.forEach(n=>{if(new Date(n.createdAt).getHours()===h)ev+=`<div class="day-evt" onclick="App.ed.open('note','${n.id}')" style="font-size:11px">${n.title||'Note'}</div>`;});e.journals.forEach(j=>{if(new Date(j.date).getHours()===h)ev+=`<div class="day-evt" style="background:var(--sec-pale);border-color:var(--secondary);color:var(--secondary);font-size:11px" onclick="App.jview.open('${j.id}','calendar')">${j.title||'Journal'}</div>`;});slots+=`<div class="day-slot"><div class="day-tm">${tl}</div><div class="day-slot-c">${ev}</div></div>`;}
+  day(c,vs){const ds=this._sel.toISOString().split('T')[0];const e=this.ents(ds);const lbl=this._sel.toLocaleDateString('en-MY',{weekday:'short',month:'short',day:'numeric'});let slots='';for(let h=0;h<24;h++){const tl=h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;let ev='';e.reminders.forEach(r=>{if(new Date(r.datetime).getHours()===h)ev+=`<div class="day-evt" style="background:var(--acc-pale);border-color:var(--accent);color:var(--accent);font-size:11px">${r.title}</div>`;});e.notes.forEach(n=>{if(new Date(n.createdAt).getHours()===h)ev+=`<div class="day-evt" data-id="${n.id}" data-type="notes" onclick="App.ed.open('note','${n.id}')" style="font-size:11px">${n.title||'Note'}</div>`;});e.journals.forEach(j=>{if(new Date(j.date).getHours()===h)ev+=`<div class="day-evt" style="background:var(--sec-pale);border-color:var(--secondary);color:var(--secondary);font-size:11px" data-id="${j.id}" data-type="journals" onclick="App.jview.open('${j.id}','calendar')">${j.title||'Journal'}</div>`;});slots+=`<div class="day-slot"><div class="day-tm">${tl}</div><div class="day-slot-c">${ev}</div></div>`;}
   c.innerHTML=`${vs}<div style="flex-shrink:0"><div class="cal-nav"><button class="ibtn" onclick="App.cal.pd()">‹</button><span class="cal-ml" style="font-size:14px">${lbl}</span><button class="ibtn" onclick="App.cal.nd()">›</button></div></div><div style="flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:16px">${slots}</div>`;setTimeout(()=>{const el=c.querySelector('div:last-child');if(el)el.scrollTop=8*40;},50);},
   agenda(c,vs){const all=[];S.notes.forEach(n=>all.push({...n,_t:'note',_d:n.createdAt}));S.journals.forEach(j=>all.push({...j,_t:'jour',_d:j.date}));S.reminders.forEach(r=>all.push({...r,_t:'rem',_d:r.datetime}));all.sort((a,b)=>new Date(a._d)-new Date(b._d));if(!all.length){c.innerHTML=`${vs}<div class="empty"><div class="empty-ic">📅</div><div class="empty-t">Nothing yet</div></div>`;return;}const grps=U.grpDate(all,'_d');const dates=Object.keys(grps).sort();const html=dates.map(ds=>{const ents=grps[ds];const lbl=U.rel(ds);return`<div style="margin-bottom:16px"><div class="tl-label" style="margin-bottom:7px"><span>${lbl===ds?U.fshort(ds):lbl}</span></div>${ents.map(e=>{if(e._t==='note')return`<div class="agenda-item" onclick="App.ed.open('note','${e.id}')"><div class="ag-dot" style="background:var(--primary)"></div><div class="ag-tm">${U.ftime(e._d)}</div><div><div class="ag-title">${e.title||'Note'}</div><div class="ag-sub">${U.strip(e.content).slice(0,50)}</div></div></div>`;if(e._t==='jour')return`<div class="agenda-item" onclick="App.jview.open('${e.id}','calendar')"><div class="ag-dot" style="background:var(--secondary)"></div><div class="ag-tm">${U.ftime(e._d)}</div><div><div class="ag-title">${e.mood||''}${e.title||'Journal'}</div><div class="ag-sub">${U.strip(e.content).slice(0,50)}</div></div></div>`;return`<div class="agenda-item"><div class="ag-dot" style="background:var(--accent)"></div><div class="ag-tm">${U.ftime(e._d)}</div><div><div class="ag-title">⏰ ${e.title}</div></div></div>`;}).join('')}</div>`;}).join('');c.innerHTML=`${vs}<div style="flex:1;overflow-y:auto;padding:12px;scrollbar-width:none;padding-bottom:16px">${html}</div>`;},
   sel(ds){this._sel=new Date(ds+'T00:00:00');this.month(document.getElementById(this._ctr),this._vsHtml());},
@@ -1330,6 +1397,17 @@ async init(){
   App.cfg.applyTheme();applyColor(S.cfg.color||'lavender');App.cfg.applyNotif();
   App.rem.schedAll();App.rem.checkMissed();
   App.home.render();
+  App.throwback.render(); // Boot On This Day
+
+  // Setup Context Menu Global Listeners
+  document.addEventListener('click', e => { if(!e.target.closest('#ctx-menu')) App.ctx.hide(); });
+  document.addEventListener('touchstart', e => { const c = e.target.closest('.card, .tl-card'); if(c && c.dataset.id) App.ctx.start(e, c.dataset.id, c.dataset.type); }, {passive: false});
+  document.addEventListener('touchend', () => App.ctx.cancel());
+  document.addEventListener('touchmove', () => App.ctx.cancel());
+  document.addEventListener('mousedown', e => { const c = e.target.closest('.card, .tl-card'); if(c && c.dataset.id) App.ctx.start(e, c.dataset.id, c.dataset.type); });
+  document.addEventListener('mouseup', () => App.ctx.cancel());
+  document.addEventListener('contextmenu', e => { const c = e.target.closest('.card, .tl-card'); if(c && c.dataset.id) { e.preventDefault(); App.ctx.show(e, c.dataset.id, c.dataset.type); }});
+
   // Auto-save
   let asT;['ed-c','ed-t'].forEach(id=>{document.getElementById(id).addEventListener('input',()=>{clearTimeout(asT);asT=setTimeout(()=>App.ed._ps(true),1800);});});
 // Close modals on backdrop
