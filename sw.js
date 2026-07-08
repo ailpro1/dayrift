@@ -1,4 +1,4 @@
-const CACHE = 'Dayrift-v1.1';
+const CACHE = 'Dayrift-v2.0';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.jpg'];
 
 self.addEventListener('install', e => {
