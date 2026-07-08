@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#8875C7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dayrift">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css">
+<title>Dayrift</title>
+<script>(function(){try{var s=JSON.parse(localStorage.getItem('noted_s')||'{}');if(s.theme==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+</head>
+<body>
+<div id="app">
+
+<div class="screen active" id="s-home">
+  <div class="hdr">
+    <span class="hdr-title"><span>🌿</span>Dayrift</span>
+    <button class="ibtn" onclick="App.drawer.open()" style="font-size:18px">☰</button>
+  </div>
+  <div class="scrl pad">
+    <div class="greet-wrap">
+      <div class="fu"><div class="greet-t" id="greet-t">Hello! 👋</div><div class="greet-d" id="greet-d"></div><div class="greet-s" id="greet-s"></div></div>
+      <div class="stats fu" style="margin-top:16px">
+        <div class="stat"><div class="stat-ic">📝</div><div class="stat-n" id="sn-n">0</div><div class="stat-l">Notes</div></div>
+        <div class="stat"><div class="stat-ic">📓</div><div class="stat-n" id="sn-j">0</div><div class="stat-l">Journal</div></div>
+        <div class="stat"><div class="stat-ic">🔥</div><div class="stat-n" id="sn-s">0</div><div class="stat-l">Streak</div></div>
+      </div>
+    </div>
+    <div id="h-throwback"></div>
+    <div class="sec-hdr fu"><span class="sec-t">Recent Notes</span><button class="see-all" onclick="App.go('notes')">See all →</button></div>
+    <div id="h-notes"></div>
+    <div class="sec-hdr fu" style="margin-top:4px"><span class="sec-t">Recent Journal</span><button class="see-all" onclick="App.go('journal')">See all →</button></div>
+    <div id="h-jour"></div>
+   
+ <div class="sec-hdr fu" style="margin-top:4px"><span class="sec-t">Upcoming Reminders</span><button class="see-all" onclick="App.drawer.open();App.drawer.tab('rem',document.querySelectorAll('.dr-tab')[2])">See all →</button></div>
+    <div id="h-rem"></div>
+    <div class="sec-hdr fu" style="margin-top:4px"><span class="sec-t">Upcoming Tasks</span><button class="see-all" onclick="App.go('tasks')">See all →</button></div>
+    <div id="h-tasks"></div>
+  </div>
+</div>
+
+<div class="screen" id="s-notes">
+  <div class="hdr">
+    <span class="hdr-title"><span>📝</span>Notes</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="ibtn" onclick="App.folders.newFolder()" style="font-size:17px" title="New Folder">📁</button>
+      <div class="vsw" id="notes-vsw">
+        <button class="vbtn on" onclick="App.notes.vw('list',this)">List</button>
+        <button class="vbtn" onclick="App.notes.vw('grid',this)">Grid</button>
+      </div>
+    </div>
+  </div>
+  <div class="notes-tabs">
+    <button class="ntab on" id="ntab-notes" onclick="App.notes.mainTab('notes',this)">📝 All Notes</button>
+ 
+   <button class="ntab" id="ntab-folders" onclick="App.notes.mainTab('folders',this)">📁 Folders</button>
+  </div>
+  <div id="notes-pane" class="scrl pad" style="flex-direction:column">
+    <div class="search">🔍<input type="text" placeholder="Search notes…" id="notes-q" oninput="App.notes.srch(this.value)"></div>
+    <div class="chips">
+      <button class="chip on" onclick="App.notes.srt('new',this)">Newest</button>
+      <button class="chip" onclick="App.notes.srt('old',this)">Oldest</button>
+      <button class="chip" onclick="App.notes.srt('az',this)">A → Z</button>
+      <button class="chip" onclick="App.notes.srt('pin',this)">Pinned</button>
+    </div>
+    <div class="folder-active-bar" id="folder-active-bar">
+      <span style="font-size:19px">📁</span>
+      <span id="folder-active-name" style="font-weight:700;font-size:14px;color:var(--primary);flex:1"></span>
+     
+  <button onclick="App.folders.clearFilter()" style="font-size:12px;font-weight:700;color:var(--primary);background:none;border:none;cursor:pointer;padding:3px 8px">✕ Clear</button>
+    </div>
+    <div class="folder-active-bar" id="tag-active-bar">
+      <span style="font-size:19px">🏷️</span>
+      <span id="tag-active-name" style="font-weight:700;font-size:14px;color:var(--primary);flex:1"></span>
+  <button onclick="App.notes.clearTagFilter()" style="font-size:12px;font-weight:700;color:var(--primary);background:none;border:none;cursor:pointer;padding:3px 8px">✕ Clear</button>
+    </div>
+    <div id="notes-list" style="padding-top:4px"></div>
+  </div>
+  <div id="folders-pane" class="scrl pad" style="display:none">
+    <div id="folders-list" style="padding-top:8px"></div>
+  </div>
+</div>
+
+<div class="screen" id="s-journal">
+  <div class="hdr">
+    <span class="hdr-title"><span>📓</span>Journal</span>
+    <div class="vsw"><button class="vbtn on" onclick="App.jour.srt('new',this)">Newest</button><button class="vbtn" onclick="App.jour.srt('old',this)">Oldest</button></div>
+  </div>
+  <div style="padding:0 16px;flex-shrink:0">
+    <div class="search" style="margin:10px 0">🔍<input type="text" placeholder="Search journal…" id="jour-q" oninput="App.jour.srch(this.value)"></div>
+  </div>
+  <div class="scrl pad" style="padding-top:0"><div id="jour-tl" style="padding-top:12px"></div></div>
+</div>
+
+<div class="screen" id="s-jv">
+  <div class="hdr">
+    <button class="ibtn" onclick="App.jview.back()">←</button>
+    <span style="font-size:13px;font-weight:700;color:var(--text2)" id="jv-hdr-date"></span>
+    <button class="jv-edit-btn" onclick="App.jview.edit()">Edit ✏️</button>
+  </div>
+  <div class="scrl" id="jv-content"></div>
+</div>
+
+<div class="screen" id="s-tasks">
+  <div class="hdr">
+    <span class="hdr-title"><span>✅</span>Tasks</span>
+    <button class="ibtn" onclick="App.tasks.form()" style="background:var(--primary);color:#fff;font-size:20px">+</button>
+  </div>
+  <div class="chips" style="padding:10px 14px 0">
+    <button class="chip on" onclick="App.tasks.setFilter('active',this)">Active</button>
+    <button class="chip" onclick="App.tasks.setFilter('done',this)">Completed</button>
+    <button class="chip" onclick="App.tasks.setFilter('all',this)">All</button>
+  </div>
+  <div class="scrl pad"><div id="tasks-screen" style="padding-top:4px"></div></div>
+</div>
+
+<nav class="nav">
+  <button class="ni on" data-nav="home" onclick="App.go('home')"><span class="ic">🏠</span><span>Home</span></button>
+  <button class="ni" data-nav="notes" onclick="App.go('notes')"><span class="ic">📝</span><span>Notes</span></button>
+  <button class="ni" data-nav="tasks" onclick="App.go('tasks')"><span class="ic">✅</span><span>Tasks</span></button>
+  <button class="ni" data-nav="journal" onclick="App.go('journal')"><span class="ic">📓</span><span>Journal</span></button>
+</nav>
+</div>
+
+<div class="fab-ov" id="fab-ov" onclick="App.fab.close()"></div>
+<div class="fab-menu" id="fab-menu">
+  <div class="fab-opt" onclick="App.ed.open('note')"><div class="fab-oi" style="background:var(--primary-pale)">📝</div>New Note</div>
+  <div class="fab-opt" onclick="App.ed.open('journal')"><div class="fab-oi" style="background:var(--sec-pale)">📓</div>New Journal</div>
+  <div class="fab-opt" onclick="App.tasks.form()"><div class="fab-oi" style="background:var(--acc-pale)">✅</div>New Task</div>
+  <div class="fab-opt" onclick="App.rem.form()"><div class="fab-oi" style="background:var(--acc-pale)">⏰</div>New Reminder</div>
+</div>
+<button class="fab" id="fab" onclick="App.fab.toggle()">+</button>
+
+<div class="dr-ov" id="dr-ov" onclick="App.drawer.close()"></div>
+<div class="drawer" id="drawer">
+  <div class="dr-hdr">
+    <div class="dr-tabs">
+      <button class="dr-tab on" onclick="App.drawer.tab('cal',this)">📅 Calendar</button>
+      <button class="dr-tab" onclick="App.drawer.tab('tags',this)">🏷️ Tags</button>
+      <button class="dr-tab" onclick="App.drawer.tab('rem',this)">⏰ Reminders</button>
+      <button class="dr-tab" onclick="App.drawer.tab('cfg',this)">⚙️ Settings</button>
+    </div>
+    <button class="ibtn" onclick="App.drawer.close()">✕</button>
+  </div>
+  <div class="dr-body">
+    <div id="dr-cal"></div>
+    <div id="dr-tags" style="display:none"></div>
+    <div id="dr-rem" style="display:none;flex:1;overflow-y:auto;padding:14px;scrollbar-width:none"></div>
+    <div id="dr-cfg" style="display:none">
+      <div class="s-sec">Your Name</div>
+      <div class="sgrp">
+        <div class="sitem" style="cursor:default">
+    
+       <div style="flex:1"><div class="name-row">
+            <input type="text" class="finput" id="cfg-name" placeholder="Enter your name…" maxlength="30" style="border-radius:var(--r-sm)">
+            <button class="name-save" onclick="App.cfg.saveName()">Save</button>
+          </div></div>
+        </div>
+      </div>
+      <div class="s-sec">Theme Colour</div>
+      <div class="sgrp"><div class="sitem" style="cursor:default"><div style="flex:1">
+        <div class="color-swatches" id="color-swatches">
+      
+     <div class="clr-sw on" style="background:#8875C7" data-col="lavender" onclick="App.cfg.color('lavender',this)"></div>
+          <div class="clr-sw" style="background:#C4607A" data-col="rose" onclick="App.cfg.color('rose',this)"></div>
+          <div class="clr-sw" style="background:#4A90C4" data-col="ocean" onclick="App.cfg.color('ocean',this)"></div>
+          <div class="clr-sw" style="background:#5D9068" data-col="sage" onclick="App.cfg.color('sage',this)"></div>
+          <div class="clr-sw" style="background:#D47844" data-col="sunset" onclick="App.cfg.color('sunset',this)"></div>
+          <div class="clr-sw" style="background:#5B5E9E" data-col="indigo" onclick="App.cfg.color('indigo',this)"></div>
+        </div>
+      </div></div></div>
+      <div class="s-sec">Appearance</div>
+      <div class="sgrp">
+        <div class="sitem" onclick="App.cfg.theme()">
+          <div class="sil"><div class="s-ic" style="background:var(--primary-pale)">🌙</div><div><div class="s-t">Dark Mode</div><div class="s-sub">Switch light / dark</div></div></div>
+          <button class="toggle" id="tog-dark" onclick="event.stopPropagation();App.cfg.theme()"></button>
+        </div>
+      </div>
+      <div class="s-sec">Notifications</div>
+      <div class="info-box">
+        <strong>📱 How to get iPhone reminders to ring</strong><br>
+        Notifications require the app to be <strong>installed</strong>:<br>
+        1️⃣ Open in <strong>Safari</strong> (not Chrome)<br>
+        2️⃣ Tap Share → <strong>Add to Home Screen</strong><br>
+        3️⃣ Open Dayrift from your Home Screen<br>
+        4️⃣ Tap the toggle below → tap <em>Allow</em><br>
+        5️⃣ iOS Settings → Notifications → Dayrift → Allow<br>
+        <br>
+        <strong>⚠️ Note:</strong> Reminders ring while the app is <strong>open</strong>. True background alerts require a server — not possible in a local app.
+</div>
+      <div class="sgrp">
+        <div class="sitem" onclick="App.cfg.notif()">
+          <div class="sil"><div class="s-ic" style="background:var(--acc-pale)">🔔</div><div><div class="s-t">Push Notifications</div><div class="s-sub" id="notif-status">Tap to enable</div></div></div>
+          <button class="toggle" id="tog-notif" onclick="event.stopPropagation();App.cfg.notif()"></button>
+        </div>
+      </div>
+      <div class="s-sec">Data &amp; Backup</div>
+      <div class="sgrp">
+        <div class="sitem" onclick="App.bkp.exp()">
+          <div class="sil"><div class="s-ic" style="background:var(--acc-pale)">📤</div><div><div class="s-t">Save to File</div><div class="s-sub">Export all data as JSON</div></div></div>
+          <span style="color:var(--text2)">›</span>
+        </div>
+        <div class="sitem" onclick="document.getElementById('imp-file').click()">
+          <div class="sil"><div class="s-ic" style="background:var(--acc-pale)">📥</div><div><div class="s-t">Load from File</div><div class="s-sub">Restore from JSON backup</div></div></div>
+          <span style="color:var(--text2)">›</span>
+  
+       </div>
+        <input type="file" id="imp-file" accept=".json" onchange="App.bkp.imp(event)">
+      </div>
+      <div class="s-sec">About</div>
+      <div class="sgrp">
+        <div class="sitem" style="cursor:default"><div class="sil"><div class="s-ic" style="background:var(--primary-pale)">🌿</div><div><div class="s-t">Dayrift v1.2</div><div class="s-sub">Your thoughts, beautifully kept 💜</div></div></div></div>
+        <div class="sitem" onclick="App.cfg.clear()"><div class="sil"><div class="s-ic" style="background:#FDECEA">🗑️</div><div><div class="s-t" style="color:var(--secondary)">Clear All Data</div><div class="s-sub">Permanently delete everything</div></div></div><span style="color:var(--text2)">›</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mo fs" id="m-ed">
+  <div class="ms">
+    <div class="ed-hdr">
+      <div style="display:flex;align-items:center;gap:9px">
+        <button class="ibtn" onclick="App.ed.close()">←</button>
+        <span class="ed-badge" id="ed-badge"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <span class="as-ind" id="as-ind"></span>
+        <button class="ibtn" id="folder-btn" onclick="App.folders.openMoveModal()" style="display:none; width:auto; padding:0 12px; border-radius:20px; font-size:13px; font-weight:700; white-space:nowrap;"><span style="margin-right:4px; font-size:15px;">📁</span> Add to Folder</button>
+        <button class="ibtn" id="pin-btn" onclick="App.ed.pin()" title="Pin">📍</button>
+        <button class="ibtn" id="del-btn" onclick="App.ed.del()" style="display:none">🗑️</button>
+      
+  <button class="ed-save" onclick="App.ed.save()">Save ✓</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="tbtn" onclick="App.ed.cmd('bold')"><b>B</b></button>
+      <button class="tbtn" onclick="App.ed.cmd('italic')"><i>I</i></button>
+      <button class="tbtn" onclick="App.ed.cmd('underline')"><u>U</u></button>
+      <button class="tbtn" onclick="App.ed.cmd('strikeThrough')"><s>S</s></button>
+      <div class="tdiv"></div>
+      <button class="tbtn" onclick="App.ed.cmd('insertUnorderedList')">•≡</button>
+      <button class="tbtn" onclick="App.ed.cmd('insertOrderedList')">1≡</button>
+      <button class="tbtn" onclick="App.ed.checklist()">☑</button>
+      <div class="tdiv"></div>
+      <button class="tbtn" onclick="App.ed.dt()">📅</button>
+      <button class="tbtn" onclick="App.ed.tbl()">⊞</button>
+  
+     <button class="tbtn" onclick="document.getElementById('ph-up').click()">🖼️</button>
+      <div class="tdiv"></div>
+      <button class="tbtn" id="voice-btn" onclick="App.ed.voiceToggle()" title="Voice Note">🎙️</button>
+    </div>
+    <div class="voice-bar" id="voice-bar">
+      <div class="voice-dot"></div>
+      <span class="voice-time" id="voice-time">0:00</span>
+      <span style="font-size:13px;color:var(--secondary);font-weight:600;flex:1">Recording…</span>
+      <button onclick="App.ed.voiceStop(true)" style="font-size:12px;font-weight:700;color:var(--secondary);background:var(--sec-pale);border:1.5px solid var(--secondary);cursor:pointer;padding:4px 10px;border-radius:20px;font-family:var(--font)">Discard</button>
+    </div>
+    <div class="ed-body" id="ed-body">
+      <textarea class="ed-title" id="ed-t" rows="1" placeholder="Title…" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <div class="ed-meta" id="ed-meta" style="display:none">
+   
+     <span class="ed-date-lbl" id="ed-dl"></span>
+        <div class="moods" id="moods">
+          <button class="mood-btn" onclick="App.ed.mood('😊',this)">😊</button>
+          <button class="mood-btn" onclick="App.ed.mood('🥰',this)">🥰</button>
+          <button class="mood-btn" onclick="App.ed.mood('😔',this)">😔</button>
+          <button class="mood-btn" onclick="App.ed.mood('😤',this)">😤</button>
+          <button class="mood-btn" onclick="App.ed.mood('😴',this)">😴</button>
+          <button class="mood-btn" onclick="App.ed.mood('🤔',this)">🤔</button>
+          <button class="mood-btn" onclick="App.ed.mood('🤩',this)">🤩</button>
+          <button class="mood-btn" onclick="App.ed.mood('😌',this)">😌</button>
+        </div>
+      </div>
+      <div class="ed-content" id="ed-c" contenteditable="true" spellcheck="true" data-placeholder="Start writing…"></div>
+      <div class="ed-photos" id="ed-photos"></div>
+      <div id="ed-audios" style="margin-top:8px"></div>
+    </div>
+    <input type="file" id="ph-up" accept="image/*" multiple onchange="App.ed.photos(event)">
+  </div>
+</div>
+
+<div class="mo" id="m-rem">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">⏰ New Reminder</div>
+    <div class="fgroup"><label class="flabel">Title</label><input type="text" class="finput" id="rem-t" placeholder="Remind me to…"></div>
+    <div class="fgroup">
+      <label class="flabel">Date &amp; Time</label>
+      <input type="text" class="finput" id="rem-dt" placeholder="tomorrow 9am · next Monday 3pm · in 2 hours" oninput="App.rem.preview(this.value)">
+      <div class="nlp-hint" id="rem-hint"></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Notes (optional)</label><textarea class="finput" rows="3" id="rem-n" placeholder="More details…"></textarea></div>
+    <button class="btn-p" onclick="App.rem.save()">Set Reminder ✓</button>
+    <button class="btn-s" onclick="App.rem.close()">Cancel</button>
+  </div>
+</div>
+
+<div class="mo" id="m-task">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">✅ New Task</div>
+    <div class="fgroup"><label class="flabel">Title</label><input type="text" class="finput" id="task-t" placeholder="What needs to be done?"></div>
+    <div class="fgroup">
+      <label class="flabel">Due Date &amp; Time (optional)</label>
+      <input type="text" class="finput" id="task-dt" placeholder="tomorrow 9am · next Monday 3pm · in 2 hours" oninput="App.tasks.preview(this.value)">
+      <div class="nlp-hint" id="task-hint"></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Notes (optional)</label><textarea class="finput" rows="3" id="task-n" placeholder="More details… use #tag to organize"></textarea></div>
+    <button class="btn-p" onclick="App.tasks.save()">Save Task ✓</button>
+    <button class="btn-s" onclick="App.tasks.close()">Cancel</button>
+  </div>
+</div>
+
+<div class="mo" id="m-tbl">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">⊞ Insert Table</div>
+    <div style="display:flex;gap:14px;margin-bottom:14px">
+      <div class="fgroup" style="flex:1;margin:0"><label class="flabel">Columns</label><input type="number" class="finput" id="tbl-c" value="3" min="1" max="8" style="width:80px"></div>
+      <div class="fgroup" style="flex:1;margin:0"><label class="flabel">Rows</label><input type="number" class="finput" id="tbl-r" value="3" min="1" max="20" style="width:80px"></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Header Colour</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="tbl-clrs">
+        <div class="tbl-clr on" style="background:#EDE9FF" onclick="App.ed.tbl_c('#EDE9FF',this)">✓</div>
+        <div class="tbl-clr" style="background:#FDECEA" onclick="App.ed.tbl_c('#FDECEA',this)"></div>
+        <div class="tbl-clr" style="background:#E7F5EA" onclick="App.ed.tbl_c('#E7F5EA',this)"></div>
+        <div class="tbl-clr" style="background:#FFF6E0" onclick="App.ed.tbl_c('#FFF6E0',this)"></div>
+        <div class="tbl-clr" style="background:#E0F0FF" onclick="App.ed.tbl_c('#E0F0FF',this)"></div>
+      </div>
+  
+   </div>
+    <button class="btn-p" onclick="App.ed.do_tbl()">Insert Table</button>
+    <button class="btn-s" onclick="document.getElementById('m-tbl').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<div class="mo" id="m-dt">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">📅 Insert Date &amp; Time</div>
+    <div class="vsw" style="margin-bottom:16px">
+      <button class="vbtn on" id="dt-m-pick" onclick="App.dtm.mode('pick',this)">📅 Pick a date</button>
+      <button class="vbtn" id="dt-m-nlp" onclick="App.dtm.mode('nlp',this)">💬 Natural language</button>
+    </div>
+    <div id="dt-pick">
+      <div class="fgroup">
+        <label class="flabel">Date &amp; Time</label>
+        <input type="datetime-local" class="finput" id="dt-picker" style="font-size:15px">
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Quick picks</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="chip" onclick="App.dtm.quick('today')">📅 Today 9am</button>
+          <button class="chip" onclick="App.dtm.quick('tomorrow')">🌅 Tomorrow 9am</button>
+          <button class="chip" onclick="App.dtm.quick('now')">🕐 Right now</button>
+        </div>
+      
+ </div>
+    </div>
+    <div id="dt-nlp" style="display:none">
+      <div class="fgroup">
+        <label class="flabel">Type naturally</label>
+        <input type="text" class="finput" id="dt-in" placeholder="today · tomorrow 9am · next Monday · in 2 hours" oninput="App.dtm.prev(this.value)">
+        <div class="nlp-hint" id="dt-prev"></div>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Insert as</label>
+   
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="dt-fmts">
+        <button class="chip on" onclick="App.dtm.fmt('both',this)">🕐 Date+Time</button>
+        <button class="chip" onclick="App.dtm.fmt('date',this)">📅 Date only</button>
+        <button class="chip" onclick="App.dtm.fmt('time',this)">⏰ Time only</button>
+        <button class="chip" onclick="App.dtm.fmt('day',this)">📆 Weekday</button>
+      </div>
+    </div>
+    <button class="btn-p" onclick="App.dtm.ins()">Insert into Note</button>
+    <button class="btn-s" onclick="document.getElementById('m-dt').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+<div class="mo" id="m-folder">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="folder-modal-title">📁 New Folder</div>
+    <div class="fgroup">
+      <label class="flabel">Folder Name</label>
+      <input type="text" class="finput" id="folder-name-inp" placeholder="e.g. Work, Personal, Ideas…" maxlength="40">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Sort notes by</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="folder-sort-row">
+        <button class="chip on" data-fsort="new" onclick="App.folders.setSort('new',this)">Newest</button>
+        <button class="chip" data-fsort="old" onclick="App.folders.setSort('old',this)">Oldest</button>
+        <button class="chip" data-fsort="az" onclick="App.folders.setSort('az',this)">A → Z</button>
+        <button class="chip" data-fsort="pin" onclick="App.folders.setSort('pin',this)">Pinned first</button>
+      </div>
+    </div>
+    <button class="btn-p" onclick="App.folders.save()">Save ✓</button>
+    <button class="btn-s" id="folder-del-btn" onclick="App.folders.confirmDel()" style="display:none;color:var(--secondary);border-color:var(--secondary)">🗑️ Delete Folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-folder').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<div class="mo" id="m-fctx">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="fctx-title">📁 Folder</div>
+    <button class="btn-s" style="margin-top:0;border:none;text-align:left;font-size:15px;color:var(--text)" onclick="App.folders.openEdit()">✏️ &nbsp;Rename / change sort</button>
+    <button class="btn-s" style="margin-top:8px;border:none;text-align:left;font-size:15px;color:var(--text)" onclick="App.folders.openFilter()">🔍 &nbsp;Browse this folder</button>
+    <button class="btn-s" style="margin-top:8px;border:none;text-align:left;font-size:15px;color:var(--secondary)" onclick="App.folders.confirmDel()">🗑️ &nbsp;Delete folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-fctx').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<div class="mo" id="m-movefolder">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">📁 Move to Folder</div>
+    <div id="move-folder-list"></div>
+ 
+    <button class="btn-s" onclick="App.folders.moveTo(null)">✕ Remove from folder</button>
+    <button class="btn-s" onclick="document.getElementById('m-movefolder').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+<div class="ph-view" id="ph-view" onclick="this.classList.remove('open')">
+  <button class="ph-view-x" onclick="document.getElementById('ph-view').classList.remove('open')">✕</button>
+  <img id="ph-view-img" src="" alt="">
+</div>
+
+<div class="rem-alert" id="rem-alert">
+  <div class="ra-ic">🔔</div>
+  <div style="flex:1"><div class="ra-t" id="ra-t">Reminder</div><div class="ra-s" id="ra-s"></div></div>
+  <button class="ra-x" onclick="App.rem.dismiss()">✕</button>
+</div>
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<div id="ctx-menu" class="context-menu">
+  <div class="ctx-item" onclick="App.ctx.edit()">✏️ Edit</div>
+  <div class="ctx-item" onclick="App.ctx.pin()">📌 Pin / Unpin</div>
+  <div class="ctx-item" onclick="App.ctx.move()">📁 Move to Folder</div>
+  <div class="ctx-item del" onclick="App.ctx.delete()">🗑️ Delete</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
